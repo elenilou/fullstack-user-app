@@ -4,32 +4,42 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
-@Setter
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "users")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "name",nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "surname",nullable = false)
     private String surname;
 
-    @Column(nullable = false)
-    private String gender; // M/F
+    @Column(name = "gender",nullable = false, length = 1)
+    private String gender; // "M"/"F"
 
-    @Column(nullable = false)
+    @Column(name = "birthdate",nullable = false)
     private LocalDate birthdate;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Address> addresses;
+    private List<Address> addresses = new ArrayList<>();
+
+    public void addAddress(Address address){
+        addresses.add(address);
+        address.setUser(this);
+    }
+
+    public void removeAddress(Address address){
+        addresses.remove(address);
+        address.setUser(null);
+    }
 
 }
