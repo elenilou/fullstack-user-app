@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:3000")
 public class UserController {
 
@@ -27,48 +27,43 @@ public class UserController {
         this.userService = userService;
     }
 
-    // GET /api/users - Λίστα όλων των χρηστών
-    @GetMapping
+    @GetMapping("/users")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         List<User> users = userService.getAllUsers();
         List<UserDTO> userDTOs = users.stream()
-                .map(this::convertToDTO)
+                .map(this::convertUserToDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(userDTOs);
     }
 
-    // GET /api/users/{id} - Λεπτομέρειες συγκεκριμένου χρήστη
-    @GetMapping("/{id}")
+    @GetMapping("/users/{id}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
-                .map(user -> ResponseEntity.ok(convertToDTO(user)))
+                .map(user -> ResponseEntity.ok(convertUserToDTO(user)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // POST /api/users - Δημιουργία νέου χρήστη
-    @PostMapping
+    @PostMapping("/register-user")
     public ResponseEntity<UserDTO> createUser(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
         User user = convertToEntity(registrationDTO);
         User savedUser = userService.createUser(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(savedUser));
+        return ResponseEntity.status(HttpStatus.CREATED).body(convertUserToDTO(savedUser));
     }
 
-    // PUT /api/users/{id} - Ενημέρωση χρήστη
-    @PutMapping("/{id}")
+    @PutMapping("/user/{id}")
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UserRegistrationDTO registrationDTO) {
         try {
             User updatedUser = convertToEntity(registrationDTO);
             User savedUser = userService.updateUser(id, updatedUser);
-            return ResponseEntity.ok(convertToDTO(savedUser));
+            return ResponseEntity.ok(convertUserToDTO(savedUser));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    // DELETE /api/users/{id} - Διαγραφή χρήστη
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/users/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         try {
             userService.deleteUser(id);
@@ -78,9 +73,9 @@ public class UserController {
         }
     }
 
-    // Helper Methods - Μετατροπές Entity <-> DTO
+    // Helper Methods - Convert Entity <-> DTO
 
-    private UserDTO convertToDTO(User user) {
+    private UserDTO convertUserToDTO(User user) {
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
         dto.setName(user.getName());
@@ -88,7 +83,7 @@ public class UserController {
         dto.setGender(user.getGender());
         dto.setBirthdate(user.getBirthdate());
 
-        // Μετατροπή addresses
+        // Convert addresses
         List<AddressDTO> addressDTOs = user.getAddresses().stream()
                 .map(this::convertAddressToDTO)
                 .collect(Collectors.toList());
@@ -112,7 +107,7 @@ public class UserController {
         user.setGender(dto.getGender());
         user.setBirthdate(dto.getBirthdate());
 
-        // Προσθήκη διευθύνσεων αν υπάρχουν
+        // If exists, create Address
         if (dto.getWorkAddress() != null && !dto.getWorkAddress().trim().isEmpty()) {
             Address workAddress = new Address();
             workAddress.setAddressType("WORK");
