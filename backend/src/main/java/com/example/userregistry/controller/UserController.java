@@ -50,7 +50,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(convertUserToDTO(savedUser));
     }
 
-    @PutMapping("/user/{id}")
+    @PutMapping("/users/{id}")
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UserRegistrationDTO registrationDTO) {
@@ -68,6 +68,66 @@ public class UserController {
         try {
             userService.deleteUser(id);
             return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Address Management Endpoints
+
+    @PostMapping("/users/{id}/addresses")
+    public ResponseEntity<AddressDTO> addAddress(
+            @PathVariable Long id,
+            @Valid @RequestBody AddressDTO addressDTO) {
+        try {
+            Address address = new Address();
+            address.setAddressType(addressDTO.getAddressType());
+            address.setAddressText(addressDTO.getAddressText());
+            
+            User updatedUser = userService.addAddressToUser(id, address);
+            // Return the newly added address
+            Address addedAddress = updatedUser.getAddresses().stream()
+                    .filter(a -> a.getId() != null)
+                    .findFirst()
+                    .orElse(address);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(convertAddressToDTO(addedAddress));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/users/{userId}/addresses/{addressId}")
+    public ResponseEntity<Void> removeAddress(
+            @PathVariable Long userId,
+            @PathVariable Long addressId) {
+        try {
+            userService.removeAddressFromUser(userId, addressId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/users/{userId}/addresses/{addressId}")
+    public ResponseEntity<AddressDTO> updateAddress(
+            @PathVariable Long userId,
+            @PathVariable Long addressId,
+            @Valid @RequestBody AddressDTO addressDTO) {
+        try {
+            User user = userService.getUserById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            Address address = user.getAddresses().stream()
+                    .filter(a -> a.getId().equals(addressId))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Address not found"));
+            
+            address.setAddressType(addressDTO.getAddressType());
+            address.setAddressText(addressDTO.getAddressText());
+            
+            userService.createUser(user); // Save the updated user
+            return ResponseEntity.ok(convertAddressToDTO(address));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

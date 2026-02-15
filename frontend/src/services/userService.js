@@ -67,3 +67,38 @@ export const deleteUser = async (id) => {
     throw error;
   }
 };
+
+// Address Management Functions
+
+// Function to add address to user
+export const addAddress = async (userId, addressData) => {
+  try {
+    const response = await api.post(`/users/${userId}/addresses`, addressData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error adding address to user ${userId}:`, error);
+    throw error;
+  }
+};
+
+// Function to update address
+export const updateAddress = async (userId, addressId, addressData) => {
+  try {
+    const response = await api.put(`/users/${userId}/addresses/${addressId}`, addressData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating address ${addressId}:`, error);
+    throw error;
+  }
+};
+
+// Function to delete address
+export const deleteAddress = async (userId, addressId) => {
+  try {
+    const response = await api.delete(`/users/${userId}/addresses/${addressId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting address ${addressId}:`, error);
+    throw error;
+  }
+};
