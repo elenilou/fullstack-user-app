@@ -29,7 +29,9 @@ function UserDetailsPage() {
     };
     
     const formatDate = (dateString) => {
-        const date = new Date(dateString);
+        // Parse ISO date string (YYYY-MM-DD) without timezone conversion
+        const [year, month, day] = dateString.split('T')[0].split('-');
+        const date = new Date(year, parseInt(month) - 1, day);
         return date.toLocaleDateString('el-GR', {
             day: '2-digit',
             month: '2-digit',
@@ -38,7 +40,9 @@ function UserDetailsPage() {
     };
     
     const calculateAge = (birthdate) => {
-        const birth = new Date(birthdate);
+        // Parse ISO date string (YYYY-MM-DD) without timezone conversion
+        const [year, month, day] = birthdate.split('T')[0].split('-');
+        const birth = new Date(year, parseInt(month) - 1, day);
         const today = new Date();
         let age = today.getFullYear() - birth.getFullYear();
         const monthDiff = today.getMonth() - birth.getMonth();

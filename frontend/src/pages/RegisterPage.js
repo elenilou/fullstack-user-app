@@ -91,12 +91,18 @@ function RegisterPage() {
     }
 
         try {
-            //Convert birthdate to ISO string format (YYYY-MM-DD)
+            //Convert birthdate to ISO string format (YYYY-MM-DD) in local timezone
+            let birthdateString = null;
+            if (formData.birthdate) {
+                const year = formData.birthdate.getFullYear();
+                const month = String(formData.birthdate.getMonth() + 1).padStart(2, '0');
+                const day = String(formData.birthdate.getDate()).padStart(2, '0');
+                birthdateString = `${year}-${month}-${day}`;
+            }
+            
             const dataToSend = {
                 ...formData,
-                birthdate: formData.birthdate 
-                    ? formData.birthdate.toISOString().split("T")[0] 
-                    : null,
+                birthdate: birthdateString,
             };
 
             await createUser(dataToSend);
