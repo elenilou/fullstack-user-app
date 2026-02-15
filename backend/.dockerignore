@@ -1,0 +1,12 @@
+target/
+.git
+.gitignore
+.maven
+.classpath
+.project
+.c9/
+*.jar
+*.exe
+.DS_Store
+.idea/
+*.log
