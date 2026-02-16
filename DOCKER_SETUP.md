@@ -1,123 +1,273 @@
-# Docker Setup - Οδηγός Εκτέλεσης
+# Docker Setup - Quick Start Guide
 
-## Προαπαιτούμενα
-- Docker Desktop εγκατεστημένο ([Download](https://www.docker.com/products/docker-desktop))
-- Docker Compose (συμπεριλαμβάνεται στο Docker Desktop)
+## Prerequisites
+- Docker Desktop installed ([Download](https://www.docker.com/products/docker-desktop))
+- Docker Compose (included with Docker Desktop)
 
-## Τρέξιμο του Project
+## Running the Project
 
-### 1. **Πρώτη εκτέλεση**
+### 1. **First Run**
 ```bash
 docker-compose up --build
 ```
-- `-build`: Κατασκευάζει τις εικόνες (images) πρώτη φορά
-- Περιμένετε 2-3 λεπτά για τα builds
+- `--build`: Builds the images for the first time
+- Wait 2-3 minutes for the build process to complete
 
-### 2. **Επόμενες εκτελέσεις**
+### 2. **Subsequent Runs**
 ```bash
 docker-compose up
 ```
 
-### 3. **Τερματισμός**
+### 3. **Stop Services**
 ```bash
 docker-compose down
 ```
 
-## Πρόσβαση στο Application
+## Access the Application
 
-| Υπηρεσία | URL | Περιγραφή |
-|----------|-----|----------|
+| Service | URL | Description |
+|---------|-----|-------------|
 | Frontend | http://localhost:3000 | React UI |
 | Backend API | http://localhost:8080 | Spring Boot API |
-| Database | localhost:3307 | MySQL (για clients) |
+| Database | localhost:3307 | MySQL (for external clients) |
 
-## Χρήσιμες Εντολές
+## Useful Commands
 
 ```bash
-# Δείτε τα logs
+# View logs in real-time
 docker-compose logs -f
 
-# Logs μόνο για το backend
+# View logs for specific service
 docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f db
 
-# Δείτε τα containers που τρέχουν
+# List running containers
 docker-compose ps
 
-# Εκτελέστε εντολή μέσα σε container
+# Execute command in container
 docker-compose exec backend bash
 
-# Σβήστε όλα (containers, networks, volumes)
+# Remove everything (containers, networks, volumes)
 docker-compose down -v
 ```
 
-## Περιβάλλον Μεταβλητών
+## Environment Variables
 
-Το σύστημα χρησιμοποιεί τα εξής defaults:
-- **Database**: user_management_db
+Default configuration:
+- **Database Name**: user_management_db
 - **DB Username**: root
-- **DB Password**: (κενό)
-- **Backend port**: 8080
-- **Frontend port**: 3000
-- **DB port**: 3307
+- **DB Password**: (empty)
+- **Backend Port**: 8080
+- **Frontend Port**: 3000
+- **Database Port (external)**: 3307
 
-Αν θέλετε να αλλάξετε, δημιουργήστε αρχείο `.env` στη ρίζα:
+To customize, create a `.env` file in the project root:
 ```env
 DB_USERNAME=custom_user
-DB_PASSWORD=custom_password
+DB_PASSWORD=your_secure_password
+MYSQL_DATABASE=my_user_db
 ```
 
-## Διαχείριση της ΒΔ
+## Database Management
 
-### MySQL Client
+### Connect to MySQL
 ```bash
-# Συνδεθείτε στη ΒΔ από το container
+# Access MySQL shell
 docker-compose exec db mysql -uroot user_management_db
 ```
 
-### Backups
-```bash
-# Δημιουργήστε backup
-docker-compose exec db mysqldump -uroot user_management_db > backup.sql
+### Backups and Restore
 
-# Επαναφορά από backup
+**Create Backup:**
+```bash
+docker-compose exec db mysqldump -uroot user_management_db > backup.sql
+```
+
+**Restore from Backup:**
+```bash
 docker-compose exec -T db mysql -uroot user_management_db < backup.sql
+```
+
+**Backup with Timestamp:**
+```bash
+docker-compose exec db mysqldump -uroot user_management_db > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ## Troubleshooting
 
-### Σφάλμα: "Cannot connect to database"
+### "Cannot connect to database" Error
+The database takes a few seconds to start. The system has health checks, but if needed:
 ```bash
-# Χρειάζεται χρόνος για να ξεκινήσει η ΒΔ
 docker-compose restart backend
 ```
 
-### Θέλω να ξεκινήσω από την αρχή
+### Start Fresh
 ```bash
+# Remove all data and start over
 docker-compose down -v
 docker-compose up --build
 ```
 
-### Port κατειλημμένο (π.χ. 3000, 8080)
-```bash
-# Αλλάξτε το docker-compose.yml:
-# ports:
-#   - "3001:3000"  (από 3000 σε 3001)
+### Port Already in Use
+If you get "port is already allocated":
+
+**Option 1:** Change ports in docker-compose.yml
+```yaml
+services:
+  frontend:
+    ports:
+      - "3001:3000"  # Changed from 3000
+  backend:
+    ports:
+      - "8081:8080"  # Changed from 8080
 ```
 
-## Κάντε Push στο Docker Hub (προαιρετικά)
+**Option 2:** Kill the process using the port
+```bash
+# On Windows (PowerShell)
+Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess | Stop-Process
+
+# On macOS/Linux
+lsof -ti:3000 | xargs kill -9
+```
+
+### Container Exits Immediately
+Check the logs:
+```bash
+docker-compose logs backend
+docker-compose logs frontend
+docker-compose logs db
+```
+
+### Out of Memory
+Docker might need more resources. Increase memory in Docker Desktop settings:
+- Settings → Resources → Memory (increase to 4GB+)
+
+## Health Checks
+
+The compose file includes health checks for the database:
+```bash
+# Check service health
+docker-compose ps
+
+# You should see STATUS like:
+# db        ... Up (healthy)
+# backend   ... Up
+# frontend  ... Up
+```
+
+## Development Workflow
+
+### Edit Code and Test
+1. Make your code changes
+2. Rebuild containers:
+   ```bash
+   docker-compose up --build
+   ```
+3. Frontend hot-reloads automatically
+4. Backend requires restart (included in rebuild)
+
+### View Real-Time Logs While Developing
+```bash
+docker-compose up --build -d  # Start in background
+docker-compose logs -f        # Watch logs
+```
+
+## Performance Tips
+
+- **Faster Builds:** Don't include node_modules in frontend `.dockerignore`
+- **Layer Caching:** Docker caches layers - order matters in Dockerfile
+- **Volume Mounts:** For development, mount source code directly:
+  ```yaml
+  frontend:
+    volumes:
+      - ./frontend/src:/app/src
+  ```
+
+## Push Images to Docker Hub (Optional)
+
+Share your containerized app:
 
 ```bash
-# Login
+# Login to Docker
 docker login
 
-# Tag της εικόνας
-docker tag spring-backend yourusername/user-registry-backend:1.0
-docker tag react-frontend yourusername/user-registry-frontend:1.0
+# Tag images
+docker tag spring-backend your_username/user-registry-backend:1.0
+docker tag react-frontend your_username/user-registry-frontend:1.0
 
-# Push
-docker push yourusername/user-registry-backend:1.0
-docker push yourusername/user-registry-frontend:1.0
+# Push to Docker Hub
+docker push your_username/user-registry-backend:1.0
+docker push your_username/user-registry-frontend:1.0
+
+# Others can now run:
+docker-compose pull  # Download images instead of building
+docker-compose up
 ```
 
+## Production Deployment
+
+When deploying to production:
+
+1. **Set secure environment variables:**
+   ```env
+   DB_PASSWORD=very_secure_password_here
+   DB_USERNAME=prod_user
+   ```
+
+2. **Use production-grade database:**
+   - Replace MySQL with managed service (RDS, CloudSQL)
+   - Use persistent volumes for data
+
+3. **Enable HTTPS:**
+   - Use reverse proxy (nginx)
+   - Get SSL certificate (Let's Encrypt)
+
+4. **Monitoring & Logging:**
+   - Use centralized logging (ELK, Datadog)
+   - Set up monitoring alerts
+
+5. **Scale Services:**
+   - Use Docker Swarm or Kubernetes
+   - Load balancer configuration
+
+## Cleanup
+
+```bash
+# Stop services (keeps data)
+docker-compose stop
+
+# Remove containers (keeps volumes)
+docker-compose down
+
+# Remove everything including volumes
+docker-compose down -v
+
+# Remove unused images
+docker image prune
+
+# Remove unused volumes
+docker volume prune
+```
+
+## FAQ
+
+**Q: Do I need Docker Compose file for production?**
+A: For simple deployments yes, but consider orchestration tools (Kubernetes) for larger systems.
+
+**Q: Can I run without building images?**
+A: Yes, if images exist: `docker-compose up`. Use `--build` only when Dockerfiles change.
+
+**Q: How do I change the frontend API URL?**
+A: Edit docker-compose.yml: `REACT_APP_API_URL=http://your-backend-url`
+
+**Q: Can I develop locally without Docker?**
+A: Yes, see the main README.md for local setup instructions.
+
 ---
-✅ Έτοιμο! Άλλοι μπορούν να κλωνοποιήσουν το repo και να τρέξουν `docker-compose up --build`
+
+✅ **Ready to Go!** Others can now clone your repository and run:
+```bash
+docker-compose up --build
+```
